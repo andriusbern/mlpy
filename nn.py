@@ -22,10 +22,7 @@ def softmax(x, deriv=False):
     e = np.exp(x)
     s = np.sum(e, axis=1)
     s = np.expand_dims(s, axis=1)
-    if deriv:
-        return e / s
-    else:
-        return e / s
+    return e / s
 
 #######################
 ## Data, labels
@@ -114,19 +111,19 @@ class FCLayer(Layer):
         self.shape = nodes
         self.prev_layer = prev_layer
         self.activation_fn = activation
-        self.dw = np.zeros_like(self.w)
         self.init_weights()
+        self.dw = np.zeros_like(self.w)
         self.error = []
     
     def init_weights(self):
         self.w = (self.init_fn(self.prev_layer.shape, self.nodes)) * np.sqrt(1 / self.prev_layer.shape)
         self.b = np.zeros(self.nodes)
+        self.mask = np.ones_like(self.b) # Neuron dropout mask
 
     def forward_pass(self, input_tensor):
         self.z = input_tensor @ self.w + self.b
-        self.a = self.activation_fn(self.z)
+        self.a = self.activation_fn(self.z) * self.mask
         return self.a
-
 
 class MLP:
     def __init__(self, layers=[], input=None, output=None):

@@ -1,22 +1,18 @@
 import numpy as np
 import os
 import tensorflow as tf
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import pyqtgraph as pg
 from PySide6 import QtGui, QtCore, QtWidgets
 from nn import MLP, one_hot
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
-
-
-
 
 
 def get_batch(x, y, batch_size):
     indices = np.random.randint(0, x.shape[1], batch_size)
     x_ = x[:, indices]
     y_ = y[indices, :]
-
     return x_, y_
 
 def to_float(value, offset=-1):
@@ -83,7 +79,21 @@ class ParameterCheckBox(QtWidgets.QWidget):
         self.main_layout.addStretch(1)
         # self.label.setFixedWidth(100)
 
+class NeuronCheckBox(QtWidgets.QCheckBox):
+    def __init__(self, parent):
+        self.par = parent
+        super(NeuronCheckBox, self).__init__(parent=parent)
+        self.clicked[bool].connect(self.dropout)
+        self.setFixedSize(10, 10)
+        self.setCheckable(True)
+        self.setChecked(True)
+        ## No margins around the checkbox (tight fit)
+        self.setStyleSheet("QCheckBox::indicator { width: 10px; height: 10px; }")
     
+    def dropout(self, status):
+        # self.par.par.layer.mask[self.par.index] = 1 if status else 0
+        self.par.par.dropout(self.par.index, status)
+
 
 class LabeledComboBox(QtWidgets.QWidget):
     def __init__(self, parent, label, items, selection='Default', use_label=True):
@@ -429,7 +439,9 @@ class Neuron(QtWidgets.QGroupBox):
         # self.activation_edit.setMaximumSize(30, 12)
         # self.activation_edit.setText('0.0')
         self.setFixedWidth(80)
-        widgets = [self.weights, self.indicator] #, self.activation_edit
+        self.check = NeuronCheckBox(self)
+        widgets = [self.weights, self.indicator, self.check] #, self.activation_edit
+        ## Small checkbox at the bottom left corner of the neuron group box
 
         lay = QtWidgets.QVBoxLayout(self)
         lay.setAlignment(QtGui.Qt.AlignHCenter)
@@ -517,6 +529,11 @@ class LayerContainer(QtWidgets.QGroupBox):
             self.fwd_indicator.light('g', keep_lit)
         else:
             self.bck_indicator.light('r', keep_lit)
+        
+    def dropout(self, index, status):
+        self.layer.mask[index] = 1 if status else 0
+        self.layer.forward_pass(self.layer.prev_layer.a)
+        self.par.forward_pass()
 
 
 class DataContainer(QtWidgets.QGroupBox):
@@ -678,19 +695,6 @@ class MLPUI(QtWidgets.QWidget):
         self.current_data = []
         self.current_labels = []
         self.continuous = False
-        
-        # 
-        # np.save('x_train', data)
-        # np.save('y_train', labels)
-        # np.save('x_test', t_data)
-        # np.save('y_test', t_labels)
-
-        # data = np.load('x_train.npy')
-        # labels = np.load('y_train.npy')
-        # t_data = np.load('x_test.npy')
-        # t_labels = np.load('y_test.npy')
-        
-
 
         self.data_container = DataContainer(parent=self)
         self.data_container.load_dataset(dataset)
