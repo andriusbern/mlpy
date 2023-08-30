@@ -1,0 +1,10 @@
+name: mlp
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pyside6
+  - pip:
+    - mnist
+    - numpy
+    - pyqtgraph

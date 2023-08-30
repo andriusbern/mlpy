@@ -1,14 +1,13 @@
-
 from PySide6 import QtGui, QtWidgets
-from interface import App
+from mlpy.interface import App
 import argparse
-from qt_material import apply_stylesheet
+
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dataset', type=str, default='MNIST')
-    parser.add_argument('-a', '--arch', type=int, nargs='*', default=[8, 8])
+    parser.add_argument('-a', '--arch', type=int, nargs='*', default=[6, 6])
 
     args = parser.parse_args()
     import sys
@@ -17,7 +16,7 @@ if __name__ == '__main__':
     thisapp = App(dataset=args.dataset, arch=args.arch)
     thisapp.setWindowTitle("Introduction to Deep Learning 2023: Multilayer Perceptron")
     thisapp.resize(800, 800)
-    font = QtGui.QFont('Monospace', 11)
+    font = QtGui.QFont('Monospace', 8)
     app.setFont(font)
     thisapp.show()
     sys.exit(app.exec())

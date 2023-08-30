@@ -1,10 +1,10 @@
 import numpy as np
 import os
-import tensorflow as tf
+# import tensorflow as tf
+import mnist
 import pyqtgraph as pg
 from PySide6 import QtGui, QtCore, QtWidgets
-from nn import MLP, one_hot
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+from .nn import MLP, one_hot
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
 
@@ -28,9 +28,10 @@ class GroupBox(QtWidgets.QGroupBox):
     def __init__(self, title='', parent=None):
         super().__init__(title, parent=parent)
         self.par = parent
-        self.setStyleSheet("QGroupBox {font: bold 14px;}")
+        self.setStyleSheet('QGroupBox {border:2px solid gray;border-radius:5px;margin-top: 1ex;} QGroupBox::title{subcontrol-origin: margin;subcontrol-position:top center;padding:0 3px;}')
         # center text
-        self.setAlignment(QtCore.Qt.AlignCenter)
+        # self.setAlignment(QtCore.Qt.AlignCenter)
+        
 
 
 
@@ -73,11 +74,9 @@ class ParameterCheckBox(QtWidgets.QWidget):
         self.main_layout = QtWidgets.QHBoxLayout(self)
         self.main_layout.addWidget(self.label)
         self.main_layout.addWidget(self.check)
-        # self.main_layout.setSpacing(0)
         self.main_layout.setContentsMargins(0, 0, 0 ,0)
         # equal spacing
         self.main_layout.addStretch(1)
-        # self.label.setFixedWidth(100)
 
 class NeuronCheckBox(QtWidgets.QCheckBox):
     def __init__(self, parent):
@@ -326,8 +325,6 @@ class WeightSlider(QtWidgets.QSlider):
         self.setRange(0, 255)
         # self.setSingleStep(127)
         self.setTickInterval(1)
-        # self.setTickPosition(QtWidgets.QSlider.TicksBothSides)
-        # self.setTickPosition(QtWidgets.QSlider.TicksBothSides)
         self.n_index = neuron_index
         self.w_index = weight_index
         self.setValue(to_int(init_val))
@@ -370,28 +367,6 @@ class WeightSlider(QtWidgets.QSlider):
         else:
             self.setStyleSheet(self.get_style('rgb(127, 127, 127)'))
 
-    # ## Add horizontal tick lines at the top, middle and the bottom of the slider
-    # def paintEvent(self, event):
-    #     super().paintEvent(event)
-    #     painter = QtGui.QPainter(self)
-    #     painter.setPen(QtGui.QPen(QtGui.QColor(0, 0, 0), 1, QtCore.Qt.SolidLine))
-    #     painter.drawLine(self.width()/4, 0, self.width()/4*3, 0)
-    #     painter.drawLine(self.width()/4, self.height()/2, self.width()/4*3, self.height()/2)
-    #     painter.drawLine(self.width()/4, self.height()-1, self.width()/4*3, self.height()-1)
-    # def paintEvent(self, event)
-    
-    #     paintEvent(event)
-
-    #     // Add your custom tick locations
-    #     QPainter painter(this);
-    #     painter.setRenderHint(QPainter::Antialiasing);
-    #     painter.setPen(Qt::darkGreen);
-    #     painter.drawRect(1, 2, 6, 4);    
-
-    #     painter.setPen(Qt::darkGray);
-    #     painter.drawLine(2, 8, 6, 2);
-    # }
-
 
 class WeightContainer(QtWidgets.QWidget):
     def __init__(self, weights, parent=None, is_bias=False):
@@ -425,7 +400,7 @@ class WeightContainer(QtWidgets.QWidget):
             lay.addWidget(label, 0, i+1)
             lay.addWidget(weight, 1, i+1, 2, 1)
 
-class Neuron(QtWidgets.QGroupBox):
+class Neuron(GroupBox):
     def __init__(self, weights, index, parent=None, title='', is_bias=False):
         super().__init__(parent=parent, title=title)
 
@@ -433,11 +408,6 @@ class Neuron(QtWidgets.QGroupBox):
         self.index = index
         self.indicator = Indicator(self, index)
         self.weights = WeightContainer(weights, parent=self, is_bias=is_bias)
-        # self.activation_edit = QtWidgets.QLineEdit()
-        # font = QtGui.QFont('Ubuntu', 6)
-        # self.activation_edit.setFont(font)
-        # self.activation_edit.setMaximumSize(30, 12)
-        # self.activation_edit.setText('0.0')
         self.setFixedWidth(80)
         self.check = NeuronCheckBox(self)
         widgets = [self.weights, self.indicator, self.check] #, self.activation_edit
@@ -455,7 +425,7 @@ class Neuron(QtWidgets.QGroupBox):
             self.weights.weights[i].set_weight(w)
 
 
-class InputNeuron(QtWidgets.QGroupBox):
+class InputNeuron(GroupBox):
     def __init__(self, weights, index, parent=None, title=''):
         super().__init__(parent=parent, title=title)
         self.par = parent
@@ -465,12 +435,6 @@ class InputNeuron(QtWidgets.QGroupBox):
 
         self.weights = ImageDisplay(self)
         self.weights.setFixedSize(125, 125)
-        # self.setFixedWidth(80)
-        # self.activation_edit = QtWidgets.QLineEdit()
-        # font = QtGui.QFont('Ubuntu', 6)
-        # self.activation_edit.setFont(font)
-        # self.activation_edit.setMaximumSize(30, 12)
-        # self.activation_edit.setText('0.0')
         
         lay = QtWidgets.QGridLayout(self)
         lay.setSpacing(0)
@@ -554,7 +518,7 @@ class DataContainer(QtWidgets.QGroupBox):
         lay = self.lay = QtWidgets.QVBoxLayout(self)
         lay.addWidget(self.display)
         lay.addWidget(self.slider)
-        self.setMinimumSize(400, 300)
+        self.setMinimumSize(150, 200)
 
     def change_image(self, value):
         if not self.par.training:
@@ -571,14 +535,17 @@ class DataContainer(QtWidgets.QGroupBox):
     def load_dataset(self, dataset):
         if dataset == "MNIST":
             self.data_shape = (28, 28)
-            (data, labels), (t_data, t_labels) = tf.keras.datasets.mnist.load_data()
+            data = mnist.train_images()
+            labels = mnist.train_labels()
+            t_data = mnist.test_images()
+            t_labels = mnist.test_labels()
             n_samples, h, w = data.shape
             n_samples_t, _, _ = t_data.shape
             data = np.reshape(data, [n_samples, h * w]).T/255.
             t_data = np.reshape(t_data, [n_samples_t, h * w]).T/255.
 
         elif dataset == "CIFAR10":
-            (data, labels), (t_data, t_labels) = tf.keras.datasets.cifar10.load_data()
+            # (data, labels), (t_data, t_labels) = tf.keras.datasets.cifar10.load_data()
             self.data_shape = (32, 32, 3)
             n_samples, h, w, c = data.shape
             n_samples_t, _, _, _ = t_data.shape
@@ -599,9 +566,6 @@ class Control(QtWidgets.QGroupBox):
         super(Control, self).__init__('Control', parent=parent)
         self.setMaximumWidth(300)
         self.par = parent
-
-        # self.dataset_selection = LabeledComboBox(self, 'Dataset: ', ['MNIST', 'CIFAR10'])
-        # self.dataset_selection.combo.currentTextChanged[str].connect(self.par.data_container.load_dataset)
 
         self.train_button = ToggleButton(self.par, ['Train', 'Stop'], 'start_training', ['Train on batches of samples.', 'Stop training.'], text=True)
 
@@ -634,9 +598,6 @@ class Control(QtWidgets.QGroupBox):
         self.batch_combo = LabeledComboBox(self, 'Batch Size: ', ['4', '16', '64', '256', '1024'])
         self.batch_combo.combo.currentTextChanged.connect(self.set_batch)
 
-        # self.backprop_checkbox = ParameterCheckBox('Backpropagate', self, self.enable_backprop)
-        # self.backprop_checkbox.check.setChecked(True)
-
         self.cascade_delay_input = QtWidgets.QLineEdit()
         self.cascade_delay_input.setText(str(parent.delay))
         self.cascade_delay_input.textChanged.connect(self.update_timer)
@@ -649,7 +610,6 @@ class Control(QtWidgets.QGroupBox):
         lay.addWidget(self.batch_combo, 3, 1, 1, 2)
         lay.addWidget(self.accuracy_button, 4, 1, 1, 1)
         lay.addWidget(self.acc_box, 4, 2, 1, 1)
-        # lay.addWidget(self.backprop_checkbox, 8, 1, 1, 2)
         lay.addWidget(QtWidgets.QLabel(' '), 5, 1, 1, 2)
         lay.addWidget(self.single_step_button, 6, 1, 1, 1)
         lay.addWidget(self.cascade_button, 6, 2, 1, 1)
@@ -658,7 +618,6 @@ class Control(QtWidgets.QGroupBox):
         lay.addWidget(self.cascade_delay_input, 8, 2, 1, 1)
         lay.addWidget(self.animation_level_selection, 9, 1, 1, 2)
 
-        # lay.addWidget(self.dataset_selection, 10, 1, 1, 2)
         lay.setSpacing(5)
         lay.setContentsMargins(5, 5, 5, 5)
 
@@ -709,7 +668,6 @@ class MLPUI(QtWidgets.QWidget):
         graph_layout = QtWidgets.QVBoxLayout(self.graph_container)
         self.graph = pg.PlotWidget()
         self.graph.setYRange(-.1, 1.1)
-        # self.graph.setXRange(-.1, 1.1)
         # add grid
         self.graph.showGrid(x=True, y=True)
         graph_layout.addWidget(self.graph)
@@ -744,17 +702,12 @@ class MLPUI(QtWidgets.QWidget):
         self.lay.addWidget(self.graph_container, 2, 1, 1, 1)
         self.lay.addWidget(self.control_panel, 1, 1, 1, 1)
         self.lay.addWidget(layer_cont, 1, 3, 2, 1)
-        self.lay.setColumnMinimumWidth(1, 260)
-        self.lay.setColumnMinimumWidth(2, 450)
+        self.lay.setColumnMinimumWidth(1, 100)
+        self.lay.setColumnMinimumWidth(2, 300)
         self.data_container.change_image(0)
     
     def load_dataset(self):
         self.data_container.load_dataset(self.control.dataset_selenction.text())
-        # self. 
-    #     dataset = self.control.dataset_selection.text()
-    #     if dataset == "MNIST":
-    #         (data, labels), (t_data, t_labels) = tf.keras.datasets.mnist.load_data()
-
 
     def update_layers(self):
         for layer in self.layers:
@@ -887,10 +840,7 @@ class MLPUI(QtWidgets.QWidget):
             for layer in self.layers:
                 for neuron in layer.neurons:
                     neuron.indicator.reset()
-            # self.model(self.current_data)
             self.forward_pass()
-            # for layer in self.layers:
-            #     layer.activate()
 
         layer = self.layers[self.index]
 
@@ -912,9 +862,6 @@ class MLPUI(QtWidgets.QWidget):
                 weights = layer.layer.w[:, j]
                 if self.index == 0:
                     weights = weights.reshape(*self.data_container.data_shape)
-                    # for layer in self.layers:
-                    #     for neuron in layer.neurons:
-                    #         neuron.indicator.reset()
                         
                 neuron.set_weights(weights)
             self.show_error(layer)
@@ -925,8 +872,6 @@ class MLPUI(QtWidgets.QWidget):
                     self.auto_cascade = False
                 self.forward = True
                 self.forward_pass()
-                # for layer in self.layers:
-                #     layer.activate()
 
             else:
                 self.index -= 1
